@@ -1,0 +1,163 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "based-server Dashboard";
+}
+
+<div class="container text-center">
+  <div class="row justify-content-start">
+    <div class="col" id="cpu"></div>
+    <div class="col" id="ram"</div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function()
+  {
+    var cpu_options =
+    {
+      chart:
+      {
+        height: 350,
+        type: 'radialBar',
+      },
+      colors: ['#9ECB9C'],
+      series: [0],
+      labels: ['CPU Usage'],
+      plotOptions:
+      {
+        radialBar:
+        {
+          hollow:
+          {
+            margin: 0,
+            size: '70%',
+            background: '#293450',
+          },
+          dataLabels:
+          {
+            name:
+            {
+              offsetY: -10,
+              color: '#FFF',
+              fontSize: '13px'
+            },
+            value:
+            {
+              color: '#FFF',
+              fontSize: '30px',
+              show: true
+            }
+          },
+          track:
+          {
+            background: '#FFF',
+            strokeWidth: '67%',
+            margin: 0,
+            dropShadow:
+            {
+              enabled: true,
+              top: -3,
+              left: 0,
+              blur: 4,
+              opacity: 0.35
+            }
+          },
+        },
+      },
+    };
+
+
+    var ram_options =
+    {
+      chart:
+      {
+        height: 350,
+        type: 'radialBar',
+      },
+      colors: ['#9ECB9C'],
+      series: [0],
+      labels: ['RAM Usage'],
+      plotOptions:
+      {
+        fill:
+        {
+          type: 'gradient',
+          gradient:
+          {
+            type: 'vertical',
+            gradientToColors: ['#FF6961'],
+          }
+        },
+        radialBar:
+        {
+          hollow:
+          {
+            margin: 0,
+            size: '70%',
+            background: '#293450',
+          },
+          track:
+          {
+            dropShadow:
+            {
+              enabled: true,
+              top: 2,
+              left: 0,
+              blur: 4,
+              opacity: 0.15
+            }
+          },
+          dataLabels:
+          {
+            name:
+            {
+              offsetY: -10,
+              color: '#FFF',
+              fontSize: '13px'
+            },
+            value:
+            {
+              color: '#FFF',
+              fontSize: '30px',
+              show: true
+            },
+          },
+        },
+      },
+    };
+
+    var cpu = new ApexCharts(document.querySelector('#cpu'), cpu_options);
+    var ram = new ApexCharts(document.querySelector('#ram'), ram_options);
+    cpu.render();
+    ram.render();
+
+    function updateCharts() {
+      $.ajax({
+        url: '/CPU',
+        method: 'GET',
+        success: function(cpuData) {
+          cpu.updateSeries([cpuData]);
+        },
+        error: function(xhr, status, error) {
+          console.log("Error retrieving CPU data: " + error);
+        }
+      });
+
+      $.ajax({
+        url: '/RAMFREE',
+        method: 'GET',
+        success: function(ramData) {
+          ram.updateSeries([ramData]);
+        },
+        error: function(xhr, status, error) {
+          console.log("Error retrieving RAM data: " + error);
+        }
+      });
+  }
+  window.setInterval(function()
+  {
+    updateCharts();
+  }, 3000);
+  });
+</script>
