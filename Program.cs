@@ -25,16 +25,40 @@ app.UseAuthorization();
 app.MapRazorPages();
 
 app.MapGet("/CPU", () => CPU());
-app.MapGet("/RAMFREE", () => RAMFree());
+app.MapGet("/RAMUSED", () => RAMUsed());
+app.MapGet("/LOAD", () => Load());
+app.MapGet("/DISKUSAGE", () => DiskUsage());
+app.MapGet("/RAMINTENSIVE", () => RamIntensive());
+app.MapGet("/NETWORK", () => NetworkActivity());
 
 app.Run();
 
+string[] NetworkActivity()
+{
+    return Execute("sh", "network.sh").Split(" ");
+}
+
+
+string[] RamIntensive()
+{
+    return Execute("sh", "ram_intensive.sh").Split(" ");
+}
+
+string[] DiskUsage()
+{
+    return Execute("sh", "disk.sh").Split(" ");
+}
+
+string[] Load()
+{
+    return Execute("sh", "load.sh").Split(" ");
+}
 
 float CPU()
 {
     return float.Parse(Execute("sh", "cpu.sh"));
 }
-float RAMFree()
+float RAMUsed()
 {
     return float.Parse(Execute("sh", "ram.sh"));
 }

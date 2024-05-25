@@ -4,11 +4,23 @@
     ViewData["Title"] = "based-server Dashboard";
 }
 
-<div class="container text-center">
-  <div class="row justify-content-start">
-    <div class="col" id="cpu"></div>
-    <div class="col" id="ram"</div>
-  </div>
+<div class="container">
+
+<div class="row">
+  <div class="col" id="cpu"></div>
+  <div class="col" id="load_average"></div>
+</div>
+
+<div class="row">
+  <div class="col" id="ram"></div>
+  <div class="col" id="disk_usage"></div>
+</div>
+
+<div class="row">
+  <div class="col" id="network"></div>
+  <div class="col" id="ram_intensive"></div>
+</div>
+
 </div>
 
 <script>
@@ -66,7 +78,6 @@
         },
       },
     };
-
 
     var ram_options =
     {
@@ -127,10 +138,188 @@
       },
     };
 
+    var load_average_options =
+    {
+      theme: {
+        palette: 'palette2',
+      },
+      series: [{
+        name: '1 Minute',
+        data: [],
+      },
+      {
+        name: '5 Minutes',
+        data: [],
+      },
+      {
+        name: '15 Minutes',
+        data: [],
+      }],
+      chart:
+      {
+        height: 350,
+        type: 'area',
+      },
+      dataLabels:
+      {
+        enabled: false,
+      },
+      stroke:
+      {
+        curve: 'smooth',
+      },
+      xaxis:
+      {
+        type: 'datetime',
+        categories: [],
+      },
+      tooltip:
+      {
+        x:
+        {
+          format: 'yy-MM-dd HH:mm:ss'
+        },
+      },
+    };
+
+    var disk_usage_options =
+    {
+      theme: {
+        palette: 'palette6',
+      },
+      series: [{
+        name: 'Read MB/s',
+        data: [],
+      },
+      {
+        name: 'Write MB/s',
+        data: [],
+      }],
+      chart:
+      {
+        height: 350,
+        type: 'area',
+      },
+      dataLabels:
+      {
+        enabled: false,
+      },
+      stroke:
+      {
+        curve: 'smooth',
+      },
+      xaxis:
+      {
+        type: 'datetime',
+        categories: [],
+      },
+      tooltip:
+      {
+        x:
+        {
+          format: 'yy-MM-dd HH:mm:ss'
+        },
+      },
+    };
+
+    var ram_intensive_options =
+    {
+      theme: {
+        palette: 'palette2',
+      },
+      series: [{
+        name: '0',
+        data: [],
+      },
+      {
+        name: '0',
+        data: [],
+      },
+      {
+        name: '0',
+        data: [],
+      }],
+      chart:
+      {
+        height: 350,
+        type: 'area',
+      },
+      dataLabels:
+      {
+        enabled: false,
+      },
+      stroke:
+      {
+        curve: 'smooth',
+      },
+      xaxis:
+      {
+        type: 'datetime',
+        categories: [],
+      },
+      tooltip:
+      {
+        x:
+        {
+          format: 'yy-MM-dd HH:mm:ss'
+        },
+      },
+    };
+
+    var network_options =
+    {
+      theme: {
+        palette: 'palette6',
+      },
+      series: [{
+        name: 'UP',
+        data: [],
+      },
+      {
+        name: 'DOWN',
+        data: [],
+      }],
+      chart:
+      {
+        height: 350,
+        type: 'area',
+      },
+      dataLabels:
+      {
+        enabled: false,
+      },
+      stroke:
+      {
+        curve: 'smooth',
+      },
+      xaxis:
+      {
+        type: 'datetime',
+        categories: [],
+      },
+      tooltip:
+      {
+        x:
+        {
+          format: 'yy-MM-dd HH:mm:ss'
+        },
+      },
+    };
+
+
     var cpu = new ApexCharts(document.querySelector('#cpu'), cpu_options);
     var ram = new ApexCharts(document.querySelector('#ram'), ram_options);
+    var load_average = new ApexCharts(document.querySelector("#load_average"), load_average_options);
+    var disk_usage = new ApexCharts(document.querySelector('#disk_usage'), disk_usage_options);
+    var ram_intensive = new ApexCharts(document.querySelector('#ram_intensive'), ram_intensive_options);
+    var network = new ApexCharts(document.querySelector('#network'), network_options);
+
     cpu.render();
+    load_average.render();
     ram.render();
+    disk_usage.render();
+    ram_intensive.render();
+    network.render();
 
     function updateCharts() {
       $.ajax({
@@ -145,16 +334,141 @@
       });
 
       $.ajax({
-        url: '/RAMFREE',
+        url: '/RAMUSED',
         method: 'GET',
         success: function(ramData) {
+          if (ramData >= 85)
+          {
+            ram_options.colors[0] = '#FF6961';
+          }
+          else if (ramData >= 75 )
+          {
+            ram_options.colors[0] = '#FDFD96';
+          }
+          else
+          {
+            ram_options.colors[0] = '#9ECB9C';
+          }
           ram.updateSeries([ramData]);
         },
         error: function(xhr, status, error) {
           console.log("Error retrieving RAM data: " + error);
         }
       });
+    $.ajax({
+      url: '/LOAD',
+      method: 'GET',
+      success: function(loadData)
+      {
+        loadData[3] = loadData[3].replace('\n', '');
+        addDataToSeries(loadData[1], loadData[2], loadData[3]);
+
+        var cat = load_average_options.xaxis.categories;
+
+        cat.push(loadData[0]);
+
+        load_average.updateOptions({
+          xaxis:
+          {
+            categories: cat
+          },
+        }, true, true, true);
+      }
+    });
+    $.ajax({
+      url: '/DISKUSAGE',
+      method: 'GET',
+      success: function(diskData)
+      {
+        diskData[2] = diskData[2].replace('\n', '');
+        disk_usage.appendData([{
+          data: [diskData[1]]
+        },
+        {
+          data: [diskData[2]]
+        }]);
+
+        var cat = disk_usage_options.xaxis.categories;
+
+        cat.push(diskData[0]);
+
+        disk_usage.updateOptions({
+          xaxis:
+          {
+            categories: cat
+          },
+        }, true, true, true);
+      }
+    });
+    $.ajax({
+      url: '/RAMINTENSIVE',
+      method: 'GET',
+      success: function(ramData)
+      {
+        ramData[6] = ramData[6].replace('\n', '');
+
+        var cat = ram_intensive_options.xaxis.categories;
+
+        cat.push(ramData[0]);
+
+        ram_intensive.appendData([{
+          data: [ramData[1]]
+        },
+        {
+          data: [ramData[3]]
+        },
+        {
+          data: [ramData[5]]
+        }])
+
+        var options = ram_intensive_options;
+        options.series[0].name = ramData[2];
+        options.series[1].name = ramData[4];
+        options.series[2].name = ramData[6];
+        options.xaxis.categories = cat;
+
+        ram_intensive.updateOptions(options, false, false, false);
+      }
+    });
+   
+    $.ajax({
+      url: '/NETWORK',
+      method: 'GET',
+      success: function(netData)
+      {
+        network.appendData([{
+          data: [netData[2]]
+        },
+        {
+          data: [netData[1]]
+        }]);
+
+        var cat = network_options.xaxis.categories;
+
+        cat.push(netData[0]);
+
+        network.updateOptions({
+          xaxis:
+          {
+            categories: cat
+          },
+        }, true, true, true);
+      }
+    });
   }
+
+  function addDataToSeries(one, five, fifteen) {
+    load_average.appendData([{
+      data: [one]
+    },
+    {
+      data: [five]
+    },
+    {
+      data: [fifteen]
+    }]);
+  }
+
   window.setInterval(function()
   {
     updateCharts();
